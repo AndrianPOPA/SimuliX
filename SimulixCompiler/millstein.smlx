@@ -1,0 +1,4 @@
+macro DISCRETIZARE_MILSTEIN(Snou, S, A, B)
+  var N: Normal(0, 1)
+  Snou = S + A * deltat + B * N * sqrt(deltat)
+end macro

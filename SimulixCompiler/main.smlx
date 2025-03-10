@@ -1,0 +1,11 @@
+include "millstein.smlx"
+include "heston.smlx"
+var i,n: Integer
+var S0, Snou: real
+var H: heston(S, t, V, a, b, c, d, rho)
+read (S0)
+for i = 1, 100
+  DISCRETIZARE_MILSTEIN(Snou, S0, 10 * S, 1)
+  S0 = Snou
+end for
+write (S0)

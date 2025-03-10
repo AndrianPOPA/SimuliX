@@ -1,0 +1,1425 @@
+# include "simulix.h"
+    class heston : public Model {
+    public:
+        heston(Stochastic S, Time t, Stochastic V, Real a, Real b, Real c, Real d, Real rho )
+        {
+            this->S = S;
+            this->t = t;
+            this->V = V;
+            this->a = a;
+            this->b = b;
+            this->c = c;
+            this->d = d;
+            this->rho = rho;
+        this->eq = new Equation[3];
+        this->eq[1] = "diff(S) = niu*S*V1 * diff(t) + sqrt(V1)*S *diff(W1)+ sqrt(V2)*S*diff(W2)";
+        this->eq[2] = "diff(V1) = k1*V2*S*diff(t)+csi1*sqrt(V1) * diff(w3)";
+        this->eq[3] = "diff(V2) = kappa*(theta-V1)*diff(t)+csi2*sqrt(V2) * diff(w4)";
+        }
+    private:
+        Stochastic S, V;
+        Time t;
+        long double a, b, c, d, rho, kappa, theta;
+        Wiener W1, W2;
+    };
+
+int main()
+{
+    long int i, n;
+    real S0, Snou;
+    heston(S, t, V, a, b, c, d, rho) H;
+    cin >> S0;
+    for (int i = 1; i <= 100; i += 1)
+    {
+        Normal(0, 1) N;
+        Snou = S0 + 10 * S * deltat + 1 * N * sqrt(deltat)
+        S0 = Snou;
+    }
+    cout << S0;
+}
+
+Variabile principale: ['S', 'V1', 'V2']
+
+Toate variabilele: ['W1', 'W2', 't', 'w3', 'w4']
+
+Coeficienți reorganizați:
+{'W1': [['sqrt(V1)*S '], ['0'], ['0']], 'W2': [['sqrt(V2)*S'], ['0'], ['0']], 't': [['niu*S*V1 '], ['k1*V2*S'], ['kappa*(theta-V1)']], 'w3': [['0'], ['csi1*sqrt(V1) '], ['0']], 'w4': [['0'], ['0'], ['csi2*sqrt(V2) ']]}
+//Coeficientii lui t
+float A(S,V1,V2,i)
+    {
+        switch(i)
+        {
+            case 1: return niu*S*V1 ;
+            case 2: return k1*V2*S;
+            case 3: return kappa*(theta-V1);
+        }
+    }
+float gradA(S,V1,V2,i,j)
+    {
+        switch(i)
+        {
+            case 1:
+                switch(j)
+                {
+                    //Coeficientul: S*V1*niu
+                    //Derivata de: S
+                    case 1: return V1*niu;
+
+                    //Coeficientul: S*V1*niu
+                    //Derivata de: V1
+                    case 2: return S*niu;
+
+                    //Coeficientul: S*V1*niu
+                    //Derivata de: V2
+                    case 3: return 0;
+
+                }
+            case 2:
+                switch(j)
+                {
+                    //Coeficientul: S*V2*k1
+                    //Derivata de: S
+                    case 1: return V2*k1;
+
+                    //Coeficientul: S*V2*k1
+                    //Derivata de: V1
+                    case 2: return 0;
+
+                    //Coeficientul: S*V2*k1
+                    //Derivata de: V2
+                    case 3: return S*k1;
+
+                }
+            case 3:
+                switch(j)
+                {
+                    //Coeficientul: kappa*(-V1 + theta)
+                    //Derivata de: S
+                    case 1: return 0;
+
+                    //Coeficientul: kappa*(-V1 + theta)
+                    //Derivata de: V1
+                    case 2: return -kappa;
+
+                    //Coeficientul: kappa*(-V1 + theta)
+                    //Derivata de: V2
+                    case 3: return 0;
+
+                }
+        }
+    }
+float hessA(S,V1,V2,i,j,k)
+    {
+        switch(i)
+        {
+            case 1:
+                switch(j)
+                {
+                    case 1:
+                        switch(k)
+                        {
+                            //Coeficientul: S*V1*niu
+                            //Prima derivare de: S
+                            //Prima derivare: V1*niu
+                            //A doua derivare de: S
+                            case 1: return 0;
+
+                            //Coeficientul: S*V1*niu
+                            //Prima derivare de: S
+                            //Prima derivare: V1*niu
+                            //A doua derivare de: V1
+                            case 2: return niu;
+
+                            //Coeficientul: S*V1*niu
+                            //Prima derivare de: S
+                            //Prima derivare: V1*niu
+                            //A doua derivare de: V2
+                            case 3: return 0;
+
+                        }
+                    case 2:
+                        switch(k)
+                        {
+                            //Coeficientul: S*V1*niu
+                            //Prima derivare de: V1
+                            //Prima derivare: S*niu
+                            //A doua derivare de: S
+                            case 1: return niu;
+
+                            //Coeficientul: S*V1*niu
+                            //Prima derivare de: V1
+                            //Prima derivare: S*niu
+                            //A doua derivare de: V1
+                            case 2: return 0;
+
+                            //Coeficientul: S*V1*niu
+                            //Prima derivare de: V1
+                            //Prima derivare: S*niu
+                            //A doua derivare de: V2
+                            case 3: return 0;
+
+                        }
+                    case 3:
+                        switch(k)
+                        {
+                            //Coeficientul: S*V1*niu
+                            //Prima derivare de: V2
+                            //Prima derivare: 0
+                            //A doua derivare de: S
+                            case 1: return 0;
+
+                            //Coeficientul: S*V1*niu
+                            //Prima derivare de: V2
+                            //Prima derivare: 0
+                            //A doua derivare de: V1
+                            case 2: return 0;
+
+                            //Coeficientul: S*V1*niu
+                            //Prima derivare de: V2
+                            //Prima derivare: 0
+                            //A doua derivare de: V2
+                            case 3: return 0;
+
+                        }
+                }
+            case 2:
+                switch(j)
+                {
+                    case 1:
+                        switch(k)
+                        {
+                            //Coeficientul: S*V2*k1
+                            //Prima derivare de: S
+                            //Prima derivare: V2*k1
+                            //A doua derivare de: S
+                            case 1: return 0;
+
+                            //Coeficientul: S*V2*k1
+                            //Prima derivare de: S
+                            //Prima derivare: V2*k1
+                            //A doua derivare de: V1
+                            case 2: return 0;
+
+                            //Coeficientul: S*V2*k1
+                            //Prima derivare de: S
+                            //Prima derivare: V2*k1
+                            //A doua derivare de: V2
+                            case 3: return k1;
+
+                        }
+                    case 2:
+                        switch(k)
+                        {
+                            //Coeficientul: S*V2*k1
+                            //Prima derivare de: V1
+                            //Prima derivare: 0
+                            //A doua derivare de: S
+                            case 1: return 0;
+
+                            //Coeficientul: S*V2*k1
+                            //Prima derivare de: V1
+                            //Prima derivare: 0
+                            //A doua derivare de: V1
+                            case 2: return 0;
+
+                            //Coeficientul: S*V2*k1
+                            //Prima derivare de: V1
+                            //Prima derivare: 0
+                            //A doua derivare de: V2
+                            case 3: return 0;
+
+                        }
+                    case 3:
+                        switch(k)
+                        {
+                            //Coeficientul: S*V2*k1
+                            //Prima derivare de: V2
+                            //Prima derivare: S*k1
+                            //A doua derivare de: S
+                            case 1: return k1;
+
+                            //Coeficientul: S*V2*k1
+                            //Prima derivare de: V2
+                            //Prima derivare: S*k1
+                            //A doua derivare de: V1
+                            case 2: return 0;
+
+                            //Coeficientul: S*V2*k1
+                            //Prima derivare de: V2
+                            //Prima derivare: S*k1
+                            //A doua derivare de: V2
+                            case 3: return 0;
+
+                        }
+                }
+            case 3:
+                switch(j)
+                {
+                    case 1:
+                        switch(k)
+                        {
+                            //Coeficientul: kappa*(-V1 + theta)
+                            //Prima derivare de: S
+                            //Prima derivare: 0
+                            //A doua derivare de: S
+                            case 1: return 0;
+
+                            //Coeficientul: kappa*(-V1 + theta)
+                            //Prima derivare de: S
+                            //Prima derivare: 0
+                            //A doua derivare de: V1
+                            case 2: return 0;
+
+                            //Coeficientul: kappa*(-V1 + theta)
+                            //Prima derivare de: S
+                            //Prima derivare: 0
+                            //A doua derivare de: V2
+                            case 3: return 0;
+
+                        }
+                    case 2:
+                        switch(k)
+                        {
+                            //Coeficientul: kappa*(-V1 + theta)
+                            //Prima derivare de: V1
+                            //Prima derivare: -kappa
+                            //A doua derivare de: S
+                            case 1: return 0;
+
+                            //Coeficientul: kappa*(-V1 + theta)
+                            //Prima derivare de: V1
+                            //Prima derivare: -kappa
+                            //A doua derivare de: V1
+                            case 2: return 0;
+
+                            //Coeficientul: kappa*(-V1 + theta)
+                            //Prima derivare de: V1
+                            //Prima derivare: -kappa
+                            //A doua derivare de: V2
+                            case 3: return 0;
+
+                        }
+                    case 3:
+                        switch(k)
+                        {
+                            //Coeficientul: kappa*(-V1 + theta)
+                            //Prima derivare de: V2
+                            //Prima derivare: 0
+                            //A doua derivare de: S
+                            case 1: return 0;
+
+                            //Coeficientul: kappa*(-V1 + theta)
+                            //Prima derivare de: V2
+                            //Prima derivare: 0
+                            //A doua derivare de: V1
+                            case 2: return 0;
+
+                            //Coeficientul: kappa*(-V1 + theta)
+                            //Prima derivare de: V2
+                            //Prima derivare: 0
+                            //A doua derivare de: V2
+                            case 3: return 0;
+
+                        }
+                }
+        }
+    }
+// Reestul coeficientilor: 
+float B(S,V1,V2,i,j)
+    {
+        switch(i)
+        {
+            case 1:
+                switch(j)
+                {
+                    case 1: return sqrt(V1)*S ;
+                    case 2: return sqrt(V2)*S;
+                    case 3: return 0;
+                    case 4: return 0;
+                }
+            case 2:
+                switch(j)
+                {
+                    case 1: return 0;
+                    case 2: return 0;
+                    case 3: return csi1*sqrt(V1) ;
+                    case 4: return 0;
+                }
+            case 3:
+                switch(j)
+                {
+                    case 1: return 0;
+                    case 2: return 0;
+                    case 3: return 0;
+                    case 4: return csi2*sqrt(V2) ;
+                }
+        }
+    }
+float gradB(S,V1,V2,i,j,derivi)
+    {
+        switch(i)
+        {
+            case 1:
+                switch(j)
+                {
+                    case 1:
+                        switch(k)
+                        {
+                            //Coeficientul: S*sqrt(V1)
+                            //Derivata de: S
+                            case 1: return sqrt(V1);
+
+                            //Coeficientul: S*sqrt(V1)
+                            //Derivata de: V1
+                            case 2: return S/(2*sqrt(V1));
+
+                            //Coeficientul: S*sqrt(V1)
+                            //Derivata de: V2
+                            case 3: return 0;
+
+                        }
+                    case 2:
+                        switch(k)
+                        {
+                            //Coeficientul: S*sqrt(V2)
+                            //Derivata de: S
+                            case 1: return sqrt(V2);
+
+                            //Coeficientul: S*sqrt(V2)
+                            //Derivata de: V1
+                            case 2: return 0;
+
+                            //Coeficientul: S*sqrt(V2)
+                            //Derivata de: V2
+                            case 3: return S/(2*sqrt(V2));
+
+                        }
+                    case 3:
+                        switch(k)
+                        {
+                            //Coeficientul: 0
+                            //Derivata de: S
+                            case 1: return 0;
+
+                            //Coeficientul: 0
+                            //Derivata de: V1
+                            case 2: return 0;
+
+                            //Coeficientul: 0
+                            //Derivata de: V2
+                            case 3: return 0;
+
+                        }
+                    case 4:
+                        switch(k)
+                        {
+                            //Coeficientul: 0
+                            //Derivata de: S
+                            case 1: return 0;
+
+                            //Coeficientul: 0
+                            //Derivata de: V1
+                            case 2: return 0;
+
+                            //Coeficientul: 0
+                            //Derivata de: V2
+                            case 3: return 0;
+
+                        }
+                }
+            case 2:
+                switch(j)
+                {
+                    case 1:
+                        switch(k)
+                        {
+                            //Coeficientul: 0
+                            //Derivata de: S
+                            case 1: return 0;
+
+                            //Coeficientul: 0
+                            //Derivata de: V1
+                            case 2: return 0;
+
+                            //Coeficientul: 0
+                            //Derivata de: V2
+                            case 3: return 0;
+
+                        }
+                    case 2:
+                        switch(k)
+                        {
+                            //Coeficientul: 0
+                            //Derivata de: S
+                            case 1: return 0;
+
+                            //Coeficientul: 0
+                            //Derivata de: V1
+                            case 2: return 0;
+
+                            //Coeficientul: 0
+                            //Derivata de: V2
+                            case 3: return 0;
+
+                        }
+                    case 3:
+                        switch(k)
+                        {
+                            //Coeficientul: sqrt(V1)*csi1
+                            //Derivata de: S
+                            case 1: return 0;
+
+                            //Coeficientul: sqrt(V1)*csi1
+                            //Derivata de: V1
+                            case 2: return csi1/(2*sqrt(V1));
+
+                            //Coeficientul: sqrt(V1)*csi1
+                            //Derivata de: V2
+                            case 3: return 0;
+
+                        }
+                    case 4:
+                        switch(k)
+                        {
+                            //Coeficientul: 0
+                            //Derivata de: S
+                            case 1: return 0;
+
+                            //Coeficientul: 0
+                            //Derivata de: V1
+                            case 2: return 0;
+
+                            //Coeficientul: 0
+                            //Derivata de: V2
+                            case 3: return 0;
+
+                        }
+                }
+            case 3:
+                switch(j)
+                {
+                    case 1:
+                        switch(k)
+                        {
+                            //Coeficientul: 0
+                            //Derivata de: S
+                            case 1: return 0;
+
+                            //Coeficientul: 0
+                            //Derivata de: V1
+                            case 2: return 0;
+
+                            //Coeficientul: 0
+                            //Derivata de: V2
+                            case 3: return 0;
+
+                        }
+                    case 2:
+                        switch(k)
+                        {
+                            //Coeficientul: 0
+                            //Derivata de: S
+                            case 1: return 0;
+
+                            //Coeficientul: 0
+                            //Derivata de: V1
+                            case 2: return 0;
+
+                            //Coeficientul: 0
+                            //Derivata de: V2
+                            case 3: return 0;
+
+                        }
+                    case 3:
+                        switch(k)
+                        {
+                            //Coeficientul: 0
+                            //Derivata de: S
+                            case 1: return 0;
+
+                            //Coeficientul: 0
+                            //Derivata de: V1
+                            case 2: return 0;
+
+                            //Coeficientul: 0
+                            //Derivata de: V2
+                            case 3: return 0;
+
+                        }
+                    case 4:
+                        switch(k)
+                        {
+                            //Coeficientul: sqrt(V2)*csi2
+                            //Derivata de: S
+                            case 1: return 0;
+
+                            //Coeficientul: sqrt(V2)*csi2
+                            //Derivata de: V1
+                            case 2: return 0;
+
+                            //Coeficientul: sqrt(V2)*csi2
+                            //Derivata de: V2
+                            case 3: return csi2/(2*sqrt(V2));
+
+                        }
+                }
+        }
+    }
+float hessB(S,V1,V2,i,j,k,l)
+    {
+        switch(i)
+        {
+            case 1:
+                switch(j)
+                {
+                    case 1:
+                        switch(k)
+                        {
+                            case 1;
+                                switch(l)
+                                {
+                                    //Coeficient: S*sqrt(V1)
+                                    //Derivata de: S
+                                    //Prima derivare: sqrt(V1)
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: S*sqrt(V1)
+                                    //Derivata de: S
+                                    //Prima derivare: sqrt(V1)
+                                    //Derivata de: V1
+                                    case 2: return 1/(2*sqrt(V1));
+
+                                    //Coeficient: S*sqrt(V1)
+                                    //Derivata de: S
+                                    //Prima derivare: sqrt(V1)
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                            case 2;
+                                switch(l)
+                                {
+                                    //Coeficient: S*sqrt(V1)
+                                    //Derivata de: V1
+                                    //Prima derivare: S/(2*sqrt(V1))
+                                    //Derivata de: S
+                                    case 1: return 1/(2*sqrt(V1));
+
+                                    //Coeficient: S*sqrt(V1)
+                                    //Derivata de: V1
+                                    //Prima derivare: S/(2*sqrt(V1))
+                                    //Derivata de: V1
+                                    case 2: return -S/(4*V1**(3/2));
+
+                                    //Coeficient: S*sqrt(V1)
+                                    //Derivata de: V1
+                                    //Prima derivare: S/(2*sqrt(V1))
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                            case 3;
+                                switch(l)
+                                {
+                                    //Coeficient: S*sqrt(V1)
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: S*sqrt(V1)
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: S*sqrt(V1)
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                        }
+                    case 2:
+                        switch(k)
+                        {
+                            case 1;
+                                switch(l)
+                                {
+                                    //Coeficient: S*sqrt(V2)
+                                    //Derivata de: S
+                                    //Prima derivare: sqrt(V2)
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: S*sqrt(V2)
+                                    //Derivata de: S
+                                    //Prima derivare: sqrt(V2)
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: S*sqrt(V2)
+                                    //Derivata de: S
+                                    //Prima derivare: sqrt(V2)
+                                    //Derivata de: V2
+                                    case 3: return 1/(2*sqrt(V2));
+
+                                }
+                            case 2;
+                                switch(l)
+                                {
+                                    //Coeficient: S*sqrt(V2)
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: S*sqrt(V2)
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: S*sqrt(V2)
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                            case 3;
+                                switch(l)
+                                {
+                                    //Coeficient: S*sqrt(V2)
+                                    //Derivata de: V2
+                                    //Prima derivare: S/(2*sqrt(V2))
+                                    //Derivata de: S
+                                    case 1: return 1/(2*sqrt(V2));
+
+                                    //Coeficient: S*sqrt(V2)
+                                    //Derivata de: V2
+                                    //Prima derivare: S/(2*sqrt(V2))
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: S*sqrt(V2)
+                                    //Derivata de: V2
+                                    //Prima derivare: S/(2*sqrt(V2))
+                                    //Derivata de: V2
+                                    case 3: return -S/(4*V2**(3/2));
+
+                                }
+                        }
+                    case 3:
+                        switch(k)
+                        {
+                            case 1;
+                                switch(l)
+                                {
+                                    //Coeficient: 0
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                            case 2;
+                                switch(l)
+                                {
+                                    //Coeficient: 0
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                            case 3;
+                                switch(l)
+                                {
+                                    //Coeficient: 0
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                        }
+                    case 4:
+                        switch(k)
+                        {
+                            case 1;
+                                switch(l)
+                                {
+                                    //Coeficient: 0
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                            case 2;
+                                switch(l)
+                                {
+                                    //Coeficient: 0
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                            case 3;
+                                switch(l)
+                                {
+                                    //Coeficient: 0
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                        }
+                }
+            case 2:
+                switch(j)
+                {
+                    case 1:
+                        switch(k)
+                        {
+                            case 1;
+                                switch(l)
+                                {
+                                    //Coeficient: 0
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                            case 2;
+                                switch(l)
+                                {
+                                    //Coeficient: 0
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                            case 3;
+                                switch(l)
+                                {
+                                    //Coeficient: 0
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                        }
+                    case 2:
+                        switch(k)
+                        {
+                            case 1;
+                                switch(l)
+                                {
+                                    //Coeficient: 0
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                            case 2;
+                                switch(l)
+                                {
+                                    //Coeficient: 0
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                            case 3;
+                                switch(l)
+                                {
+                                    //Coeficient: 0
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                        }
+                    case 3:
+                        switch(k)
+                        {
+                            case 1;
+                                switch(l)
+                                {
+                                    //Coeficient: sqrt(V1)*csi1
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: sqrt(V1)*csi1
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: sqrt(V1)*csi1
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                            case 2;
+                                switch(l)
+                                {
+                                    //Coeficient: sqrt(V1)*csi1
+                                    //Derivata de: V1
+                                    //Prima derivare: csi1/(2*sqrt(V1))
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: sqrt(V1)*csi1
+                                    //Derivata de: V1
+                                    //Prima derivare: csi1/(2*sqrt(V1))
+                                    //Derivata de: V1
+                                    case 2: return -csi1/(4*V1**(3/2));
+
+                                    //Coeficient: sqrt(V1)*csi1
+                                    //Derivata de: V1
+                                    //Prima derivare: csi1/(2*sqrt(V1))
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                            case 3;
+                                switch(l)
+                                {
+                                    //Coeficient: sqrt(V1)*csi1
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: sqrt(V1)*csi1
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: sqrt(V1)*csi1
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                        }
+                    case 4:
+                        switch(k)
+                        {
+                            case 1;
+                                switch(l)
+                                {
+                                    //Coeficient: 0
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                            case 2;
+                                switch(l)
+                                {
+                                    //Coeficient: 0
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                            case 3;
+                                switch(l)
+                                {
+                                    //Coeficient: 0
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                        }
+                }
+            case 3:
+                switch(j)
+                {
+                    case 1:
+                        switch(k)
+                        {
+                            case 1;
+                                switch(l)
+                                {
+                                    //Coeficient: 0
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                            case 2;
+                                switch(l)
+                                {
+                                    //Coeficient: 0
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                            case 3;
+                                switch(l)
+                                {
+                                    //Coeficient: 0
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                        }
+                    case 2:
+                        switch(k)
+                        {
+                            case 1;
+                                switch(l)
+                                {
+                                    //Coeficient: 0
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                            case 2;
+                                switch(l)
+                                {
+                                    //Coeficient: 0
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                            case 3;
+                                switch(l)
+                                {
+                                    //Coeficient: 0
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                        }
+                    case 3:
+                        switch(k)
+                        {
+                            case 1;
+                                switch(l)
+                                {
+                                    //Coeficient: 0
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                            case 2;
+                                switch(l)
+                                {
+                                    //Coeficient: 0
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                            case 3;
+                                switch(l)
+                                {
+                                    //Coeficient: 0
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: 0
+                                    //Derivata de: V2
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                        }
+                    case 4:
+                        switch(k)
+                        {
+                            case 1;
+                                switch(l)
+                                {
+                                    //Coeficient: sqrt(V2)*csi2
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: sqrt(V2)*csi2
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: sqrt(V2)*csi2
+                                    //Derivata de: S
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                            case 2;
+                                switch(l)
+                                {
+                                    //Coeficient: sqrt(V2)*csi2
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: sqrt(V2)*csi2
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: sqrt(V2)*csi2
+                                    //Derivata de: V1
+                                    //Prima derivare: 0
+                                    //Derivata de: V2
+                                    case 3: return 0;
+
+                                }
+                            case 3;
+                                switch(l)
+                                {
+                                    //Coeficient: sqrt(V2)*csi2
+                                    //Derivata de: V2
+                                    //Prima derivare: csi2/(2*sqrt(V2))
+                                    //Derivata de: S
+                                    case 1: return 0;
+
+                                    //Coeficient: sqrt(V2)*csi2
+                                    //Derivata de: V2
+                                    //Prima derivare: csi2/(2*sqrt(V2))
+                                    //Derivata de: V1
+                                    case 2: return 0;
+
+                                    //Coeficient: sqrt(V2)*csi2
+                                    //Derivata de: V2
+                                    //Prima derivare: csi2/(2*sqrt(V2))
+                                    //Derivata de: V2
+                                    case 3: return -csi2/(4*V2**(3/2));
+
+                                }
+                        }
+                }
+        }
+    }

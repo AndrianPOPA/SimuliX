@@ -1,0 +1,10 @@
+def model heston(S, t, V, a, b, c, d, rho)
+  var S, V: Stochastic
+  var t: Time
+  var a, b, c, d, rho, kappa, theta: Real
+  var W1, W2: Wiener
+  equation diff(S) = niu*S*V1 * diff(t) + sqrt(V1)*S *diff(W1)+ sqrt(V2)*S*diff(W2)
+  equation diff(V1) = k1*V2*S*diff(t)+csi1*sqrt(V1) * diff(w3)
+  equation diff(V2) = kappa*(theta-V1)*diff(t)+csi2*sqrt(V2) * diff(w4)
+end model
+
