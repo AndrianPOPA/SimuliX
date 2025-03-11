@@ -13,12 +13,12 @@ output_buffer = OutputBuffer()
 
 class Utils:
     @staticmethod
-    def write_in_file(*args, sep=" ", end="\n", file_name="output.txt"):
+    def write_in_file(*args, sep=" ", end="\n", file_name="SimulixCompiler/output.txt"):
         with open(file_name, "a", encoding="utf-8") as f:
             f.write(sep.join(map(str, args)) + end)
     
     @staticmethod
-    def read_file_model(file_name="output.txt"):
+    def read_file_model(file_name="SimulixCompiler/output.txt"):
         try:
             with open(file_name, "r", encoding="utf-8") as f:
                 return f.readlines()
@@ -26,7 +26,7 @@ class Utils:
             return []
         
     @staticmethod
-    def insert_before_of(before_of, *args, sep=" ", end="\n", file_name="output.txt"):
+    def insert_before_of(before_of, *args, sep=" ", end="\n", file_name="SimulixCompiler/output.txt"):
         linii = Utils.read_file_model(file_name)
         text_formatat = sep.join(map(str, args)) + (end if end != "" else "")  # Creează textul de adăugat
         gasit = False
@@ -42,7 +42,7 @@ class Utils:
             Utils.write_in_file(f"Atenție: '{before_of}' nu a fost găsit în {file_name}!")
 
     @staticmethod
-    def reset_file(file_name="output.txt"):
+    def reset_file(file_name="SimulixCompiler/output.txt"):
         with open(file_name, "w", encoding="utf-8") as f:
             pass  # Deschide fișierul în mod write și îl golește
 

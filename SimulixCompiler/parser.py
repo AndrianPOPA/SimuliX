@@ -341,7 +341,7 @@ class Parser:
 
     @staticmethod
     def read_file(file_path):
-        with open(file_path, "r") as Simulix:
+        with open("SimulixCompiler/"+file_path, "r") as Simulix:
             if file_path in globals.opened_files:
                 Utils.write_in_file(f"Error: {file_path} was already opened and it will create a loop")
                 exit(1)
